@@ -38,6 +38,10 @@
       "favicon": "./assets/images/favicon.png"
     },
 
+    "extra": {
+      "googleMapsApiKey": "AIzaSyCjENAjqFqwYb7-LMXGeh2QCNfvGU47vwQ"
+    },
+
     "plugins": [
       "expo-router",
       [

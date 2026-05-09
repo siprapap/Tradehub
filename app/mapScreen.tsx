@@ -1,7 +1,8 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+// eslint-disable-next-line import/no-unresolved
+import { LocationMap } from "@/components/LocationMap";
 
 type Coordinate = {
   latitude: number;
@@ -29,18 +30,13 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      <MapView
-        provider={PROVIDER_GOOGLE}
-        style={styles.map}
-        initialRegion={{
-          ...initialCoordinate,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }}
-        onPress={(event) => setSelectedLocation(event.nativeEvent.coordinate)}
-      >
-        <Marker coordinate={selectedLocation} />
-      </MapView>
+      <View style={styles.map}>
+        <LocationMap
+          selectedLocation={selectedLocation}
+          initialCoordinate={initialCoordinate}
+          onSelectLocation={setSelectedLocation}
+        />
+      </View>
 
       <View style={styles.bottomBar}>
         <Text style={styles.locationText}>
