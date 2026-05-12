@@ -1,10 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { Plus, Trash2, User } from "lucide-react-native";
+import { Pencil, Plus, Trash2, User } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { FlatList, Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useAppContext } from "./_layout";
 import { productJson, productItem } from "@/components/interface";
 import { API_URL } from "@/components/api";
+import { AppPalette } from "@/constants/theme";
+import { Image } from "expo-image";
 
 
 export default function UserInfoScreen() {
@@ -61,7 +63,7 @@ export default function UserInfoScreen() {
 
   const handleDeleteProduct = async(productId: string) => {
     try {
-      const response = await fetch(`${API_URL}/deletePorduct`, {
+      const response = await fetch(`${API_URL}/deleteProduct`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,7 +99,7 @@ export default function UserInfoScreen() {
     <View style={styles.container}>
       {showProductAdded && (
         <View style={styles.popup}>
-          <Text style={styles.popupText}>New Product Added</Text>
+          <Text style={styles.popupText}>Product saved</Text>
         </View>
       )}
 
@@ -140,7 +142,7 @@ export default function UserInfoScreen() {
 
       <View style={styles.infoBox}>
         <View style={styles.avatarCircle}>
-          <User size={52} color="#111" />
+          <User size={52} color={AppPalette.primary} />
         </View>
 
         <Text style={styles.username}>{loggedUsername}</Text>
@@ -157,7 +159,7 @@ export default function UserInfoScreen() {
           style={styles.addButton}
           onPress={() => router.push("/addNewProduct")}
         >
-          <Plus size={20} color="#fff" />
+          <Plus size={20} color={AppPalette.card} />
           <Text style={styles.addButtonText}>Post</Text>
         </TouchableOpacity>
       </View>
@@ -171,20 +173,53 @@ export default function UserInfoScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.productCard}>
-            <View style={styles.productImagePlaceholder} />
+            {item.imageUri ? (
+              <Image
+                source={{ uri: item.imageUri }}
+                style={styles.productImage}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={styles.productImagePlaceholder} />
+            )}
 
             <View style={styles.productInfo}>
               <Text style={styles.productName}>{item.name}</Text>
+              <Text style={styles.productDescription}>{item.category || "Uncategorized"}</Text>
               <Text style={styles.productDescription}>{item.detail}</Text>
               <Text style={styles.productPrice}>{item.price} baht</Text>
+              <Text style={styles.productDescription}>{item.locationName || "No location set"}</Text>
             </View>
 
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => confirmDeleteProduct(item._id)}
-            >
-              <Trash2 size={20} color="#c62828" />
-            </TouchableOpacity>
+            <View style={styles.productActions}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => router.push({
+                  pathname: "/addNewProduct",
+                  params: {
+                    productId: item._id,
+                    name: item.name,
+                    price: item.price,
+                    detail: item.detail,
+                    category: item.category,
+                    contactDetails: item.contactDetails,
+                    imageUri: item.imageUri,
+                    locationName: item.locationName,
+                    latitude: item.latitude,
+                    longitude: item.longitude,
+                  },
+                })}
+              >
+                <Pencil size={18} color={AppPalette.primary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => confirmDeleteProduct(item._id)}
+              >
+                <Trash2 size={20} color={AppPalette.danger} />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       />
@@ -195,23 +230,26 @@ export default function UserInfoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: AppPalette.background,
     padding: 20,
   },
   infoBox: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: AppPalette.card,
     borderRadius: 18,
     padding: 20,
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: AppPalette.border,
   },
   avatarCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#fff",
-    borderColor: "#111",
+    backgroundColor: AppPalette.background,
+    borderColor: AppPalette.border,
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -220,18 +258,20 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 24,
     fontWeight: "700",
-    color: "#000",
+    color: AppPalette.textDark,
   },
   logoutButton: {
-    backgroundColor: "#e9f8f8",
+    backgroundColor: AppPalette.background,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 24,
+    borderWidth: 1,
+    borderColor: AppPalette.border,
   },
   logoutText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#123f3b",
+    color: AppPalette.textBody,
   },
   productHeader: {
     flexDirection: "row",
@@ -243,18 +283,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#111",
+    color: AppPalette.primary,
   },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#007AFF",
+    backgroundColor: AppPalette.primary,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 22,
   },
   addButtonText: {
-    color: "#fff",
+    color: AppPalette.card,
     fontSize: 16,
     fontWeight: "700",
     marginLeft: 6,
@@ -263,18 +303,27 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   productCard: {
-    backgroundColor: "#fff",
+    backgroundColor: AppPalette.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: AppPalette.border,
   },
   productImagePlaceholder: {
     width: 70,
     height: 70,
     borderRadius: 10,
-    backgroundColor: "#e6e6e6",
+    backgroundColor: AppPalette.placeholder,
+    marginRight: 14,
+  },
+  productImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    backgroundColor: AppPalette.placeholder,
     marginRight: 14,
   },
   productInfo: {
@@ -284,34 +333,49 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#ffebee",
+    backgroundColor: AppPalette.dangerSoft,
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 12,
   },
+  productActions: {
+    marginLeft: 12,
+    alignItems: "center",
+  },
+  editButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: AppPalette.background,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: AppPalette.border,
+    marginBottom: 8,
+  },
   productName: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111",
+    color: AppPalette.textDark,
     marginBottom: 4,
   },
   productDescription: {
     fontSize: 14,
-    color: "#777",
+    color: AppPalette.textBody,
     marginBottom: 8,
   },
   productPrice: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#123f3b",
+    color: AppPalette.primary,
   },
   emptyText: {
-    color: "#777",
+    color: AppPalette.textBody,
     textAlign: "center",
     marginTop: 32,
   },
   popup: {
-    backgroundColor: "#123f3b",
+    backgroundColor: AppPalette.primary,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -319,13 +383,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   popupText: {
-    color: "#fff",
+    color: AppPalette.card,
     fontSize: 16,
     fontWeight: "700",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: AppPalette.overlay,
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -333,19 +397,19 @@ const styles = StyleSheet.create({
   confirmBox: {
     width: "100%",
     maxWidth: 340,
-    backgroundColor: "#fff",
+    backgroundColor: AppPalette.card,
     borderRadius: 16,
     padding: 20,
   },
   confirmTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#111",
+    color: AppPalette.textDark,
     marginBottom: 8,
   },
   confirmText: {
     fontSize: 16,
-    color: "#555",
+    color: AppPalette.textBody,
     marginBottom: 20,
   },
   confirmActions: {
@@ -358,18 +422,18 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   cancelButtonText: {
-    color: "#555",
+    color: AppPalette.textBody,
     fontSize: 16,
     fontWeight: "700",
   },
   confirmDeleteButton: {
-    backgroundColor: "#c62828",
+    backgroundColor: AppPalette.danger,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   confirmDeleteText: {
-    color: "#fff",
+    color: AppPalette.card,
     fontSize: 16,
     fontWeight: "700",
   },

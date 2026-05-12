@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { useAppContext } from "./_layout";
 import { API_URL } from "@/components/api";
+import { AppPalette } from "@/constants/theme";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
@@ -95,7 +96,7 @@ export default function LoginScreen() {
         <TouchableOpacity style={styles.button} onPress={handleSignUp}>
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
-        <ThemedText style={{color:'red'}}> {errorMessage} </ThemedText>
+        <ThemedText style={{color: AppPalette.danger}}> {errorMessage} </ThemedText>
       </View>
     </View>
   );
@@ -106,35 +107,39 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f2f2f2",
+    backgroundColor: AppPalette.background,
     padding: 20,
   },
   loginBox: {
     width: "100%",
     maxWidth: 350,
-    backgroundColor: "white",
+    backgroundColor: AppPalette.card,
     padding: 24,
-    borderRadius: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: AppPalette.border,
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 24,
+    color: AppPalette.primary,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
+    borderColor: AppPalette.border,
+    borderRadius: 10,
     padding: 12,
     fontSize: 16,
     marginBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: AppPalette.card,
+    color: AppPalette.textDark,
   },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: AppPalette.primary,
     padding: 14,
-    borderRadius: 6,
+    borderRadius: 10,
     alignItems: "center",
     marginTop: 8,
   },
@@ -145,6 +150,6 @@ const styles = StyleSheet.create({
   },
   text: {
     textAlign: "center",
-    color: "#8d8f91"
+    color: AppPalette.textBody
   }
 });

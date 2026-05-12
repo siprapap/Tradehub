@@ -4,26 +4,52 @@
  */
 
 import { Platform } from 'react-native';
+import { DefaultTheme, type Theme } from '@react-navigation/native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+export const AppPalette = {
+  primary: '#1A3FBB',
+  background: '#E8E6DF',
+  card: '#FFFFFF',
+  textDark: '#1A1A2E',
+  textBody: '#2D4A8A',
+  accent: '#1A3FBB',
+  border: '#C9D1E8',
+  muted: '#7B88A8',
+  placeholder: '#D8D6CF',
+  overlay: 'rgba(26, 26, 46, 0.35)',
+  danger: '#C62828',
+  dangerSoft: '#FDEBEC',
+} as const;
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: AppPalette.textDark,
+    background: AppPalette.background,
+    tint: AppPalette.primary,
+    icon: AppPalette.textBody,
+    tabIconDefault: AppPalette.muted,
+    tabIconSelected: AppPalette.primary,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: AppPalette.textDark,
+    background: AppPalette.background,
+    tint: AppPalette.primary,
+    icon: AppPalette.textBody,
+    tabIconDefault: AppPalette.muted,
+    tabIconSelected: AppPalette.primary,
+  },
+};
+
+export const AppNavigationTheme: Theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: AppPalette.primary,
+    background: AppPalette.background,
+    card: AppPalette.background,
+    text: AppPalette.textDark,
+    border: AppPalette.border,
+    notification: AppPalette.accent,
   },
 };
 

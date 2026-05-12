@@ -1,8 +1,9 @@
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useMemo, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-// eslint-disable-next-line import/no-unresolved
 import { LocationMap } from "@/components/LocationMap";
+import { AppPalette } from "@/constants/theme";
+import { useAppContext } from "./_layout";
 
 type Coordinate = {
   latitude: number;
@@ -15,16 +16,79 @@ const initialCoordinate: Coordinate = {
 };
 
 export default function MapScreen() {
+  const { defaultLocation, setDefaultLocation } = useAppContext();
+  const {
+    source,
+    latitude,
+    longitude,
+    productId,
+    name,
+    price,
+    detail,
+    category,
+    contactDetails,
+    imageUri,
+  } = useLocalSearchParams<{
+    source?: string;
+    latitude?: string;
+    longitude?: string;
+    productId?: string;
+    name?: string;
+    price?: string;
+    detail?: string;
+    category?: string;
+    contactDetails?: string;
+    imageUri?: string;
+  }>();
+  const resolvedInitialCoordinate = useMemo(() => {
+    if (latitude && longitude) {
+      return {
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+      };
+    }
+
+    if (defaultLocation) {
+      return {
+        latitude: Number(defaultLocation.latitude),
+        longitude: Number(defaultLocation.longitude),
+      };
+    }
+
+    return initialCoordinate;
+  }, [defaultLocation, latitude, longitude]);
   const [selectedLocation, setSelectedLocation] =
-    useState<Coordinate>(initialCoordinate);
+    useState<Coordinate>(resolvedInitialCoordinate);
 
   const handleConfirmLocation = () => {
+    const nextLocation = {
+      latitude: selectedLocation.latitude.toString(),
+      longitude: selectedLocation.longitude.toString(),
+      locationName: `${selectedLocation.latitude.toFixed(4)}, ${selectedLocation.longitude.toFixed(4)}`,
+    };
+
+    setDefaultLocation(nextLocation);
+
+    if (source === "post") {
+      router.dismissTo({
+        pathname: "/addNewProduct",
+        params: {
+          ...nextLocation,
+          productId,
+          name,
+          price,
+          detail,
+          category,
+          contactDetails,
+          imageUri,
+        },
+      });
+      return;
+    }
+
     router.dismissTo({
       pathname: "/home",
-      params: {
-        latitude: selectedLocation.latitude.toString(),
-        longitude: selectedLocation.longitude.toString(),
-      },
+      params: nextLocation,
     });
   };
 
@@ -33,7 +97,7 @@ export default function MapScreen() {
       <View style={styles.map}>
         <LocationMap
           selectedLocation={selectedLocation}
-          initialCoordinate={initialCoordinate}
+          initialCoordinate={resolvedInitialCoordinate}
           onSelectLocation={setSelectedLocation}
         />
       </View>
@@ -59,25 +123,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bottomBar: {
-    backgroundColor: "#fff",
+    backgroundColor: AppPalette.card,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: AppPalette.border,
   },
   locationText: {
-    color: "#555",
+    color: AppPalette.textBody,
     fontSize: 14,
     textAlign: "center",
     marginBottom: 12,
   },
   confirmButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: AppPalette.primary,
     borderRadius: 10,
     padding: 14,
     alignItems: "center",
   },
   confirmButtonText: {
-    color: "#fff",
+    color: AppPalette.card,
     fontSize: 16,
     fontWeight: "700",
   },
