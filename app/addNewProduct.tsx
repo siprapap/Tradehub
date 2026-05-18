@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import { Modal, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { productAddItem } from "@/components/interface";
 import {format} from "date-fns"
 import { useAppContext } from "./_layout";
@@ -10,6 +10,8 @@ import { PRODUCT_CATEGORIES } from "@/constants/categories";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { ChevronDown, MapPin } from "lucide-react-native";
+import { storage } from "@/components/firebaseConfig";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 export default function AddNewProductScreen() {
     const {loggedUsername, defaultLocation, setDefaultLocation} =useAppContext();
@@ -46,6 +48,7 @@ export default function AddNewProductScreen() {
     const [selectedLocation, setSelectedLocation] = useState(defaultLocation);
     const [showConfirmPost,setShowConfirmPost]= useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [requiredFields,setRequiredFields]= useState({
         name: false,
         price: false,
@@ -92,10 +95,26 @@ export default function AddNewProductScreen() {
       }
     }, [latitude, longitude, locationName, setDefaultLocation]);
 
+    const normalizePriceInput = (text: string) => {
+        const numbersAndDecimalOnly = text.replace(/[^0-9.]/g, '');
+        const [wholeNumber, ...decimalParts] = numbersAndDecimalOnly.split('.');
+
+        if (decimalParts.length === 0) {
+            return wholeNumber;
+        }
+
+        return `${wholeNumber}.${decimalParts.join('')}`;
+    }
+
+    const isValidPrice = (value: string) => {
+        const parsedPrice = Number(value);
+        return value.trim() !== '' && Number.isFinite(parsedPrice) && parsedPrice > 0;
+    }
+
     const handlePostPress = () => {
         const nextRequiredFields = {
             name: name.trim() === '',
-            price: price.trim() === '',
+            price: !isValidPrice(price),
             detail: detail.trim() === '',
             category: category.trim() === '',
             contactDetails: contactDetails.trim() === '',
@@ -171,32 +190,80 @@ export default function AddNewProductScreen() {
         catch(error){console.error('Error posting data:',error);}
     }
 
+    // React Native requires XMLHttpRequest to read local file URIs as blobs
+    const uriToBlob = (uri: string): Promise<Blob> => {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = () => resolve(xhr.response);
+        xhr.onerror = () => reject(new Error("Failed to read image file"));
+        xhr.responseType = "blob";
+        xhr.open("GET", uri, true);
+        xhr.send(null);
+      });
+    };
+
+    // Uploads image to Firebase Storage and returns the public download URL
+    const uploadImageToFirebase = (localUri: string): Promise<string> => {
+      return new Promise(async (resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("Upload timed out"));
+        }, 30000);
+
+        try {
+          const blob = await uriToBlob(localUri);
+          const filename = `products/${loggedUsername}/${Date.now()}.jpg`;
+          const storageRef = ref(storage, filename);
+          const uploadTask = uploadBytesResumable(storageRef, blob);
+
+          uploadTask.on(
+            "state_changed",
+            null,
+            (error) => { clearTimeout(timeout); reject(error); },
+            async () => {
+              clearTimeout(timeout);
+              try {
+                const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(downloadUrl);
+              } catch (e) { reject(e); }
+            }
+          );
+        } catch (e) {
+          clearTimeout(timeout);
+          reject(e);
+        }
+      });
+    };
+
     const handlePickImage = async() => {
       try {
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
           allowsEditing: true,
           quality: 0.7,
-          base64: true,
         });
 
-        if (result.canceled) {
-          return;
-        }
+        if (result.canceled) return;
 
         const asset = result.assets[0];
-        if (asset.base64) {
-          const mimeType = asset.mimeType || "image/jpeg";
-          setImageUri(`data:${mimeType};base64,${asset.base64}`);
-          return;
-        }
+        if (!asset.uri) return;
 
-        if (asset.uri) {
-          setImageUri(asset.uri);
+        setUploadingImage(true);
+        try {
+          const downloadUrl = await uploadImageToFirebase(asset.uri);
+          setImageUri(downloadUrl);
+        } catch (uploadError) {
+          console.error("Firebase upload error:", uploadError);
+          Alert.alert(
+            "Upload Failed",
+            "Could not upload image. Please check your Firebase Storage rules and try again.",
+          );
+        } finally {
+          setUploadingImage(false);
         }
       }
       catch(error) {
         console.error("Error picking image:", error);
+        setUploadingImage(false);
       }
     }
   return (
@@ -283,17 +350,21 @@ export default function AddNewProductScreen() {
 
       <TextInput style={styles.input} 
         placeholder="Price" 
-        keyboardType="numeric" 
+        keyboardType="decimal-pad"
         value={price}
         onChangeText={(text:string)=>{
-                    setPrice(text)
+                    setPrice(normalizePriceInput(text))
                     setRequiredFields((current) => ({
                         ...current,
                         price: false,
                     }))
                 }}
       />
-      {requiredFields.price && <Text style={styles.requiredText}>Required</Text>}
+      {requiredFields.price && (
+        <Text style={styles.requiredText}>
+          {price.trim() === '' ? 'Required' : 'Price must be greater than 0'}
+        </Text>
+      )}
 
       <TouchableOpacity
         style={styles.selectorButton}
@@ -358,21 +429,37 @@ export default function AddNewProductScreen() {
       </TouchableOpacity>
       {requiredFields.location && <Text style={styles.requiredText}>Required</Text>}
 
-      <TouchableOpacity style={styles.imageButton} onPress={handlePickImage}>
-        <Text style={styles.imageButtonText}>
-          {imageUri ? "Change product image" : "Upload product image"}
-        </Text>
+      <TouchableOpacity
+        style={[styles.imageButton, uploadingImage && styles.imageButtonDisabled]}
+        onPress={handlePickImage}
+        disabled={uploadingImage}
+      >
+        {uploadingImage ? (
+          <View style={styles.uploadingRow}>
+            <ActivityIndicator size="small" color={AppPalette.primary} />
+            <Text style={[styles.imageButtonText, { marginLeft: 8 }]}>Uploading...</Text>
+          </View>
+        ) : (
+          <Text style={styles.imageButtonText}>
+            {imageUri ? "Change product image" : "Upload product image"}
+          </Text>
+        )}
       </TouchableOpacity>
 
-      {imageUri ? (
+      {imageUri && !uploadingImage ? (
         <Image source={{ uri: imageUri }} style={styles.previewImage} contentFit="cover" />
-      ) : (
+      ) : !uploadingImage ? (
         <View style={styles.imagePlaceholder}>
           <Text style={styles.imagePlaceholderText}>No image selected</Text>
         </View>
+      ) : (
+        <View style={styles.imagePlaceholder}>
+          <ActivityIndicator size="large" color={AppPalette.primary} />
+          <Text style={[styles.imagePlaceholderText, { marginTop: 8 }]}>Uploading to storage...</Text>
+        </View>
       )}
 
-      <TouchableOpacity style={styles.button} onPress={handlePostPress}>
+      <TouchableOpacity style={styles.button} onPress={handlePostPress} disabled={uploadingImage}>
         <Text style={styles.buttonText}>{isEditing ? "Save Changes" : "Post Product"}</Text>
       </TouchableOpacity>
     </View>
@@ -457,6 +544,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 4,
     marginBottom: 12,
+  },
+  imageButtonDisabled: {
+    opacity: 0.6,
+  },
+  uploadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   imageButtonText: {
     color: AppPalette.primary,

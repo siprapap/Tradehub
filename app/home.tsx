@@ -51,7 +51,7 @@ const getPriceValue = (price: string) => {
 export default function Home() {
     const[product,setProduct]= useState<ProductWithDistance[]>([]);
     const[searchKeyword,setSearchKeyword]= useState('');
-    const { defaultLocation, setDefaultLocation, locationLoaded } = useAppContext();
+    const { loggedUsername, defaultLocation, setDefaultLocation, locationLoaded } = useAppContext();
     const { latitude, longitude } = useLocalSearchParams<{
       latitude?: string;
       longitude?: string;
@@ -153,12 +153,13 @@ export default function Home() {
 
                     const filteredProducts = productsWithDistance.filter((item) => {
                       const priceValue = getPriceValue(item.price);
+                      const isOwnProduct = item.user === loggedUsername;
                       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(item.category);
                       const matchesMinPrice = nextMinPrice === undefined || priceValue >= nextMinPrice;
                       const matchesMaxPrice = nextMaxPrice === undefined || priceValue <= nextMaxPrice;
                       const matchesDistance = nextMaxDistanceKm === undefined || item.distanceKm <= nextMaxDistanceKm;
 
-                      return matchesCategory && matchesMinPrice && matchesMaxPrice && matchesDistance;
+                      return !isOwnProduct && matchesCategory && matchesMinPrice && matchesMaxPrice && matchesDistance;
                     });
 
                     const sortedProducts = [...filteredProducts].sort((left, right) => {
@@ -187,7 +188,7 @@ export default function Home() {
             }, 300);
 
             return () => clearTimeout(timer);
-          },[activeLocation, maxDistanceKm, maxPrice, minPrice, searchKeyword, selectedCategories, sortBy]);
+          },[activeLocation, loggedUsername, maxDistanceKm, maxPrice, minPrice, searchKeyword, selectedCategories, sortBy]);
 
     const toggleCategory = (category: string) => {
       setSelectedCategories((current) => (
