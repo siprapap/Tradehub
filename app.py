@@ -3,7 +3,14 @@ from werkzeug.security import check_password_hash
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from flask_cors import CORS
+import os
 import re
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 PRODUCT_CATEGORIES = {
     "Electronics",
@@ -29,7 +36,11 @@ PRODUCT_CATEGORIES = {
 app=Flask(__name__)
 CORS(app)
 
-client= MongoClient("mongodb+srv://gammmsp_db_user:yh0ViSWlmu6ocLmx@cluster0.hupxpm8.mongodb.net/?appName=Cluster0")
+MONGODB_URI = os.environ.get("MONGODB_URI")
+if not MONGODB_URI:
+    raise RuntimeError("MONGODB_URI environment variable is not set (see .env.example)")
+
+client= MongoClient(MONGODB_URI)
 db=client["Tradehub"]
 userInfo=db["userInfo"]
 productInfo = db["productInfo"]

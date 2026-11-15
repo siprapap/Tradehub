@@ -20,7 +20,7 @@ type GoogleMapsWindow = Window & {
 const googleMapsApiKey =
   Constants.expoConfig?.extra?.googleMapsApiKey ||
   Constants.expoConfig?.ios?.config?.googleMapsApiKey ||
-  "AIzaSyCjENAjqFqwYb7-LMXGeh2QCNfvGU47vwQ";
+  "";
 
 function loadGoogleMapsScript() {
   return new Promise<void>((resolve, reject) => {

@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 
 expo-env.d.ts
 # @end expo-cli
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Expo local state
+.expo/

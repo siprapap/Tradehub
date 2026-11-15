@@ -2,13 +2,13 @@ import { initializeApp, getApps } from "firebase/app";
 import { getStorage } from "firebase/storage";
  
 const firebaseConfig = {
-  apiKey: "AIzaSyDmlQHlcAppl00ipMLUzUb2Wf1yD24PgrI",
-  authDomain: "tradehub-d7d2c.firebaseapp.com",
-  projectId: "tradehub-d7d2c",
-  storageBucket: "tradehub-d7d2c.firebasestorage.app",
-  messagingSenderId: "877695204872",
-  appId: "1:877695204872:web:33c9b3253ea80a06ec5bbd",
-  measurementId: "G-0XLWGZ82C6"
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
  
 // Prevent re-initializing on hot reload
